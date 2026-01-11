@@ -9,11 +9,16 @@ export function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       const { error } = await supabase.auth.getSession();
+
+      // Get stored return URL
+      const returnTo = localStorage.getItem('authReturnTo') || '/library';
+      localStorage.removeItem('authReturnTo');
+
       if (error) {
         console.error('Auth callback error:', error);
         navigate('/auth?error=auth_failed');
       } else {
-        navigate('/library');
+        navigate(returnTo);
       }
     };
 

@@ -13,46 +13,48 @@ export function JoinClub() {
 
   const [club, setClub] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
-  const [joining, setJoining] = useState(false);
   const [error, setError] = useState('');
   const [joined, setJoined] = useState(false);
+  const [attempted, setAttempted] = useState(false);
 
   useEffect(() => {
-    if (inviteCode) {
-      loadClub();
-    }
-  }, [inviteCode]);
+    // Wait for auth to resolve and user to be available
+    if (authLoading || !user || !inviteCode || attempted) return;
 
-  const loadClub = async () => {
+    setAttempted(true);
+    loadClubAndJoin();
+  }, [inviteCode, user, authLoading, attempted]);
+
+  const loadClubAndJoin = async () => {
+    if (!user || !inviteCode) return;
+
     try {
-      const clubData = await getClubByInviteCode(inviteCode!);
+      const clubData = await getClubByInviteCode(inviteCode);
+      if (!clubData) {
+        setError('Invalid invite code');
+        setLoading(false);
+        return;
+      }
       setClub(clubData);
+
+      // Auto-join
+      try {
+        await joinClub(clubData.id, user.id);
+        setJoined(true);
+        setTimeout(() => navigate(`/club/${clubData.id}`), 1500);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to join';
+        if (message.includes('duplicate')) {
+          // Already a member, just redirect
+          navigate(`/club/${clubData.id}`);
+        } else {
+          setError(message);
+        }
+      }
     } catch (err) {
       setError('Invalid invite code');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleJoin = async () => {
-    if (!club || !user) return;
-    setJoining(true);
-    setError('');
-
-    try {
-      await joinClub(club.id, user.id);
-      setJoined(true);
-      setTimeout(() => navigate(`/club/${club.id}`), 1500);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to join';
-      if (message.includes('duplicate')) {
-        setError("You're already a member!");
-        setTimeout(() => navigate(`/club/${club.id}`), 1500);
-      } else {
-        setError(message);
-      }
-    } finally {
-      setJoining(false);
     }
   };
 
@@ -108,7 +110,7 @@ export function JoinClub() {
     );
   }
 
-  // Show join confirmation
+  // Show joining state or error
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
       <div className="max-w-md w-full text-center">
@@ -124,14 +126,18 @@ export function JoinClub() {
               <span className="text-4xl">📚</span>
             </div>
           )}
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Join {club.name}</h1>
-          {club.description && (
-            <p className="text-gray-600 mb-6">{club.description}</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">{club.name}</h1>
+          {error ? (
+            <>
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button onClick={() => navigate('/clubs')}>Go to Clubs</Button>
+            </>
+          ) : (
+            <>
+              <LoadingSpinner size="sm" />
+              <p className="text-gray-600 mt-2">Joining club...</p>
+            </>
           )}
-          {error && <p className="text-red-600 mb-4">{error}</p>}
-          <Button onClick={handleJoin} loading={joining} className="w-full">
-            Join Club
-          </Button>
         </div>
       </div>
     </div>

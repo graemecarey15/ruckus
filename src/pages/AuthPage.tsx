@@ -35,6 +35,10 @@ export function AuthPage() {
     setIsLoading(true);
 
     try {
+      // Store returnTo so callback can use it
+      if (returnTo !== '/library') {
+        localStorage.setItem('authReturnTo', returnTo);
+      }
       await signInWithMagicLink(email);
       setSubmitted(true);
     } catch (err) {

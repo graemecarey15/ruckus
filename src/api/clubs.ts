@@ -130,3 +130,13 @@ export async function updateMemberRole(
   if (error) throw error;
   return data;
 }
+
+export async function removeMember(clubId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('club_members')
+    .delete()
+    .eq('club_id', clubId)
+    .eq('user_id', userId);
+
+  if (error) throw error;
+}
