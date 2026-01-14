@@ -78,6 +78,38 @@ export interface ClubMember {
   profile?: Profile;
 }
 
+export interface ClubBookSuggestion {
+  id: string;
+  club_id: string;
+  book_id: string;
+  suggested_by: string;
+  note: string | null;
+  created_at: string;
+  book?: Book;
+  profile?: Profile;
+  vote_count?: number;
+  user_has_voted?: boolean;
+  comments?: SuggestionComment[];
+}
+
+export interface SuggestionVote {
+  id: string;
+  suggestion_id: string;
+  user_id: string;
+  created_at: string;
+  profile?: Profile;
+}
+
+export interface SuggestionComment {
+  id: string;
+  suggestion_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  profile?: Profile;
+}
+
 // Open Library API types
 export interface OpenLibrarySearchResult {
   key: string;

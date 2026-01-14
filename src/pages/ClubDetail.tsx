@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getClub, getClubMembers, leaveClub, removeMember } from '@/api/clubs';
-import { getUserBooks, updateProgress } from '@/api/userBooks';
+import { getClub, getClubMembers, leaveClub, removeMember, getClubSuggestions, removeSuggestion, getVotesForSuggestion, getCommentsForSuggestion } from '@/api/clubs';
+import { getUserBooks, updateProgress, addBookToLibrary } from '@/api/userBooks';
 import { getPublicNotesForUser, createNote, deleteNote } from '@/api/notes';
-import type { Club, ClubMember, UserBook, Book, Note } from '@/types';
+import type { Club, ClubMember, UserBook, Book, Note, ClubBookSuggestion, SuggestionVote, SuggestionComment } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { MemberCard } from '@/components/clubs/MemberCard';
 import { BookCover } from '@/components/books/BookCover';
 import { ProgressBar } from '@/components/books/ProgressBar';
 import { Avatar } from '@/components/ui/Avatar';
+import { SuggestBookModal } from '@/components/clubs/SuggestBookModal';
+import { SuggestionCard } from '@/components/clubs/SuggestionCard';
 
 export function ClubDetail() {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +27,11 @@ export function ClubDetail() {
   const [showInviteCode, setShowInviteCode] = useState(false);
   const [quickNoteFor, setQuickNoteFor] = useState<string | null>(null);
   const [quickNoteText, setQuickNoteText] = useState('');
+  const [suggestions, setSuggestions] = useState<ClubBookSuggestion[]>([]);
+  const [myBookIds, setMyBookIds] = useState<Set<string>>(new Set());
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [suggestionVotes, setSuggestionVotes] = useState<Map<string, SuggestionVote[]>>(new Map());
+  const [suggestionComments, setSuggestionComments] = useState<Map<string, SuggestionComment[]>>(new Map());
 
   useEffect(() => {
     if (id) {
@@ -35,12 +42,34 @@ export function ClubDetail() {
   const loadClub = async () => {
     if (!id) return;
     try {
-      const [clubData, membersData] = await Promise.all([
+      const [clubData, membersData, suggestionsData] = await Promise.all([
         getClub(id),
         getClubMembers(id),
+        getClubSuggestions(id),
       ]);
       setClub(clubData);
       setMembers(membersData);
+      setSuggestions(suggestionsData);
+
+      // Load votes and comments for all suggestions
+      const votesMap = new Map<string, SuggestionVote[]>();
+      const commentsMap = new Map<string, SuggestionComment[]>();
+      await Promise.all(
+        suggestionsData.map(async (suggestion) => {
+          try {
+            const [votes, comments] = await Promise.all([
+              getVotesForSuggestion(suggestion.id),
+              getCommentsForSuggestion(suggestion.id),
+            ]);
+            votesMap.set(suggestion.id, votes);
+            commentsMap.set(suggestion.id, comments);
+          } catch (e) {
+            console.error('Failed to load data for suggestion:', suggestion.id, e);
+          }
+        })
+      );
+      setSuggestionVotes(votesMap);
+      setSuggestionComments(commentsMap);
 
       // Load books and notes for all members
       const booksMap = new Map<string, (UserBook & { book: Book })[]>();
@@ -61,6 +90,12 @@ export function ClubDetail() {
       );
       setMemberBooks(booksMap);
       setMemberNotes(notesMap);
+
+      // Track user's own books to know what they already have
+      if (user) {
+        const myBooks = booksMap.get(user.id) || [];
+        setMyBookIds(new Set(myBooks.map((b) => b.book_id)));
+      }
     } catch (error) {
       console.error('Failed to load club:', error);
     } finally {
@@ -164,6 +199,50 @@ export function ClubDetail() {
       console.error('Failed to delete note:', err);
       alert('Failed to delete note');
     }
+  };
+
+  const handleAddToLibrary = async (bookId: string) => {
+    if (!user) return;
+    try {
+      await addBookToLibrary(user.id, bookId, 'want_to_read');
+      setMyBookIds((prev) => new Set(prev).add(bookId));
+    } catch (err) {
+      console.error('Failed to add book:', err);
+      alert('Failed to add book to library');
+    }
+  };
+
+  const handleSuggestionAdded = (suggestion: ClubBookSuggestion) => {
+    setSuggestions((prev) => [suggestion, ...prev]);
+    setSuggestionVotes((prev) => new Map(prev).set(suggestion.id, []));
+    setSuggestionComments((prev) => new Map(prev).set(suggestion.id, []));
+  };
+
+  const handleRemoveSuggestion = async (suggestionId: string) => {
+    try {
+      await removeSuggestion(suggestionId);
+      setSuggestions((prev) => prev.filter((s) => s.id !== suggestionId));
+      setSuggestionVotes((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(suggestionId);
+        return newMap;
+      });
+      setSuggestionComments((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(suggestionId);
+        return newMap;
+      });
+    } catch (err) {
+      console.error('Failed to remove suggestion:', err);
+    }
+  };
+
+  const handleVoteChange = (suggestionId: string, votes: SuggestionVote[]) => {
+    setSuggestionVotes((prev) => new Map(prev).set(suggestionId, votes));
+  };
+
+  const handleCommentsChange = (suggestionId: string, comments: SuggestionComment[]) => {
+    setSuggestionComments((prev) => new Map(prev).set(suggestionId, comments));
   };
 
   if (loading) {
@@ -303,7 +382,7 @@ export function ClubDetail() {
                             />
                           </div>
                         )}
-                        {isOwn && (
+                        {isOwn ? (
                           <div className="mt-2">
                             {quickNoteFor === item.id ? (
                               <div className="flex gap-2">
@@ -347,6 +426,17 @@ export function ClubDetail() {
                               </button>
                             )}
                           </div>
+                        ) : (
+                          <div className="mt-2">
+                            {!myBookIds.has(item.book_id) && (
+                              <button
+                                onClick={() => handleAddToLibrary(item.book_id)}
+                                className="text-xs text-indigo-600 hover:text-indigo-700"
+                              >
+                                + Add to library
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -378,22 +468,38 @@ export function ClubDetail() {
 
           return (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {finished.map((item) => (
-                <div key={item.id} className="text-center">
-                  <BookCover src={item.book.cover_url} title={item.book.title} size="md" />
-                  <p className="text-xs text-gray-600 mt-2 line-clamp-1">{item.book.title}</p>
-                  <div className="flex items-center justify-center gap-1 mt-1">
-                    <Avatar
-                      src={item.member.profile?.avatar_url}
-                      name={item.member.profile?.display_name || item.member.profile?.username || ''}
-                      size="sm"
-                    />
-                    {item.rating && (
-                      <span className="text-xs text-amber-500">{'★'.repeat(item.rating)}</span>
-                    )}
+              {finished.map((item) => {
+                const isOwn = item.member.user_id === user?.id;
+                const hasBook = myBookIds.has(item.book_id);
+                return (
+                  <div key={item.id} className="text-center group">
+                    <div className="relative">
+                      <BookCover src={item.book.cover_url} title={item.book.title} size="md" />
+                      {!isOwn && !hasBook && (
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 rounded">
+                          <button
+                            onClick={() => handleAddToLibrary(item.book_id)}
+                            className="text-xs text-white bg-indigo-600 px-2 py-1 rounded hover:bg-indigo-700"
+                          >
+                            + Library
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-600 mt-2 line-clamp-1">{item.book.title}</p>
+                    <div className="flex items-center justify-center gap-1 mt-1">
+                      <Avatar
+                        src={item.member.profile?.avatar_url}
+                        name={item.member.profile?.display_name || item.member.profile?.username || ''}
+                        size="sm"
+                      />
+                      {item.rating && (
+                        <span className="text-xs text-amber-500">{'★'.repeat(item.rating)}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           );
         })()}
@@ -467,6 +573,37 @@ export function ClubDetail() {
         })()}
       </div>
 
+      {/* Suggested Books Section */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-900">Suggested Group Reads</h2>
+          <Button size="sm" onClick={() => setShowSuggestModal(true)}>
+            + Suggest a Book
+          </Button>
+        </div>
+        {suggestions.length === 0 ? (
+          <p className="text-gray-500 text-sm">No books suggested yet. Click "Suggest a Book" to recommend something for the group!</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {suggestions.map((suggestion) => (
+              <SuggestionCard
+                key={suggestion.id}
+                suggestion={suggestion}
+                userId={user?.id || ''}
+                isOwner={isOwner}
+                votes={suggestionVotes.get(suggestion.id) || []}
+                comments={suggestionComments.get(suggestion.id) || []}
+                hasBook={myBookIds.has(suggestion.book_id)}
+                onAddToLibrary={handleAddToLibrary}
+                onRemove={handleRemoveSuggestion}
+                onVoteChange={handleVoteChange}
+                onCommentsChange={handleCommentsChange}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Members Section */}
       <div className="mt-8">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Members</h2>
@@ -493,6 +630,19 @@ export function ClubDetail() {
           ))}
         </div>
       </div>
+
+      {/* Suggest Book Modal */}
+      {user && club && (
+        <SuggestBookModal
+          isOpen={showSuggestModal}
+          onClose={() => setShowSuggestModal(false)}
+          clubId={club.id}
+          userId={user.id}
+          userBooks={memberBooks.get(user.id) || []}
+          existingSuggestions={suggestions}
+          onSuggestionAdded={handleSuggestionAdded}
+        />
+      )}
     </div>
   );
 }

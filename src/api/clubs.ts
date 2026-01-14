@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Club, ClubMember } from '@/types';
+import type { Club, ClubMember, ClubBookSuggestion, SuggestionVote, SuggestionComment } from '@/types';
 
 export async function getUserClubs(userId: string): Promise<Club[]> {
   const { data, error } = await supabase
@@ -137,6 +137,124 @@ export async function removeMember(clubId: string, userId: string): Promise<void
     .delete()
     .eq('club_id', clubId)
     .eq('user_id', userId);
+
+  if (error) throw error;
+}
+
+// Club Book Suggestions
+export async function getClubSuggestions(clubId: string): Promise<ClubBookSuggestion[]> {
+  const { data, error } = await supabase
+    .from('club_book_suggestions')
+    .select('*, book:books(*), profile:profiles(*)')
+    .eq('club_id', clubId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function suggestBook(
+  clubId: string,
+  bookId: string,
+  userId: string,
+  note?: string
+): Promise<ClubBookSuggestion> {
+  const { data, error } = await supabase
+    .from('club_book_suggestions')
+    .insert({ club_id: clubId, book_id: bookId, suggested_by: userId, note })
+    .select('*, book:books(*), profile:profiles(*)')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function removeSuggestion(suggestionId: string): Promise<void> {
+  const { error } = await supabase
+    .from('club_book_suggestions')
+    .delete()
+    .eq('id', suggestionId);
+
+  if (error) throw error;
+}
+
+// Suggestion Votes
+export async function getVotesForSuggestion(suggestionId: string): Promise<SuggestionVote[]> {
+  const { data, error } = await supabase
+    .from('club_suggestion_votes')
+    .select('*, profile:profiles(*)')
+    .eq('suggestion_id', suggestionId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function voteForSuggestion(suggestionId: string, userId: string): Promise<SuggestionVote> {
+  const { data, error } = await supabase
+    .from('club_suggestion_votes')
+    .insert({ suggestion_id: suggestionId, user_id: userId })
+    .select('*, profile:profiles(*)')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function removeVote(suggestionId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('club_suggestion_votes')
+    .delete()
+    .eq('suggestion_id', suggestionId)
+    .eq('user_id', userId);
+
+  if (error) throw error;
+}
+
+// Suggestion Comments
+export async function getCommentsForSuggestion(suggestionId: string): Promise<SuggestionComment[]> {
+  const { data, error } = await supabase
+    .from('club_suggestion_comments')
+    .select('*, profile:profiles(*)')
+    .eq('suggestion_id', suggestionId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function addComment(
+  suggestionId: string,
+  userId: string,
+  content: string
+): Promise<SuggestionComment> {
+  const { data, error } = await supabase
+    .from('club_suggestion_comments')
+    .insert({ suggestion_id: suggestionId, user_id: userId, content })
+    .select('*, profile:profiles(*)')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function updateComment(commentId: string, content: string): Promise<SuggestionComment> {
+  const { data, error } = await supabase
+    .from('club_suggestion_comments')
+    .update({ content })
+    .eq('id', commentId)
+    .select('*, profile:profiles(*)')
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  const { error } = await supabase
+    .from('club_suggestion_comments')
+    .delete()
+    .eq('id', commentId);
 
   if (error) throw error;
 }
