@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getClub, getClubMembers, leaveClub, removeMember, getClubSuggestions, removeSuggestion, getVotesForSuggestion, getCommentsForSuggestion } from '@/api/clubs';
+import { getClub, getClubMembers, leaveClub, removeMember, deleteClub, getClubSuggestions, removeSuggestion, getVotesForSuggestion, getCommentsForSuggestion } from '@/api/clubs';
 import { getUserBooks, updateProgress, addBookToLibrary } from '@/api/userBooks';
 import { getPublicNotesForUser, createNote, deleteNote } from '@/api/notes';
 import type { Club, ClubMember, UserBook, Book, Note, ClubBookSuggestion, SuggestionVote, SuggestionComment } from '@/types';
@@ -116,6 +116,19 @@ export function ClubDetail() {
 
     await leaveClub(club.id, user.id);
     navigate('/clubs');
+  };
+
+  const handleDeleteClub = async () => {
+    if (!club || !isOwner) return;
+    if (!confirm(`Are you sure you want to delete "${club.name}"? This cannot be undone.`)) return;
+
+    try {
+      await deleteClub(club.id);
+      navigate('/clubs');
+    } catch (err) {
+      console.error('Failed to delete club:', err);
+      alert('Failed to delete club');
+    }
   };
 
   const inviteLink = club ? `${window.location.origin}/join/${club.invite_code}` : '';
@@ -629,6 +642,14 @@ export function ClubDetail() {
             </div>
           ))}
         </div>
+
+        {isOwner && (
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <Button variant="danger" onClick={handleDeleteClub}>
+              Delete Club
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Suggest Book Modal */}
