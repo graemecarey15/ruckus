@@ -99,7 +99,7 @@ export async function getBookCategories(userBookId: string): Promise<TbrCategory
     .eq('user_book_id', userBookId);
 
   if (error) throw error;
-  return data.map((row) => row.category as TbrCategory);
+  return data.map((row) => row.category as unknown as TbrCategory);
 }
 
 export async function getCategoriesWithCounts(

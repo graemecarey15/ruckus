@@ -27,7 +27,7 @@ export async function getUserBooks(userId: string): Promise<UserBook[]> {
           if (!acc[row.user_book_id]) {
             acc[row.user_book_id] = [];
           }
-          acc[row.user_book_id].push(row.category as TbrCategory);
+          acc[row.user_book_id].push(row.category as unknown as TbrCategory);
           return acc;
         },
         {} as Record<string, TbrCategory[]>
