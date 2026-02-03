@@ -1,14 +1,24 @@
-import type { Book, UserBook } from '@/types';
+import type { Book, UserBook, TbrCategory } from '@/types';
 import { BookCard } from './BookCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 interface BookGridProps {
   books: (UserBook & { book: Book })[];
   showProgress?: boolean;
+  showCategorySelector?: boolean;
+  allCategories?: TbrCategory[];
+  onBookCategoriesChange?: (userBookId: string, categories: TbrCategory[]) => void;
   emptyMessage?: string;
 }
 
-export function BookGrid({ books, showProgress = false, emptyMessage }: BookGridProps) {
+export function BookGrid({
+  books,
+  showProgress = false,
+  showCategorySelector = false,
+  allCategories = [],
+  onBookCategoriesChange,
+  emptyMessage,
+}: BookGridProps) {
   if (books.length === 0) {
     return (
       <EmptyState
@@ -26,6 +36,13 @@ export function BookGrid({ books, showProgress = false, emptyMessage }: BookGrid
           book={userBook.book}
           userBook={userBook}
           showProgress={showProgress}
+          showCategorySelector={showCategorySelector}
+          allCategories={allCategories}
+          onCategoriesChange={
+            onBookCategoriesChange
+              ? (categories) => onBookCategoriesChange(userBook.id, categories)
+              : undefined
+          }
           linkTo={`/book/${userBook.book_id}`}
         />
       ))}

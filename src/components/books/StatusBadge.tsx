@@ -6,7 +6,7 @@ interface StatusBadgeProps {
 
 const statusConfig: Record<ReadingStatus, { label: string; className: string }> = {
   want_to_read: {
-    label: 'Want to read',
+    label: 'TBR',
     className: 'bg-yellow-100 text-yellow-800',
   },
   currently_reading: {

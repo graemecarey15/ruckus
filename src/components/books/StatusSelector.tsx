@@ -7,7 +7,7 @@ interface StatusSelectorProps {
 }
 
 const statusOptions: { value: ReadingStatus; label: string }[] = [
-  { value: 'want_to_read', label: 'Want to Read' },
+  { value: 'want_to_read', label: 'TBR' },
   { value: 'currently_reading', label: 'Currently Reading' },
   { value: 'finished', label: 'Finished' },
 ];

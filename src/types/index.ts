@@ -28,6 +28,24 @@ export interface Book {
   updated_at: string;
 }
 
+export interface TbrCategory {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserBookCategory {
+  id: string;
+  user_book_id: string;
+  category_id: string;
+  created_at: string;
+  category?: TbrCategory;
+}
+
 export interface UserBook {
   id: string;
   user_id: string;
@@ -41,6 +59,7 @@ export interface UserBook {
   updated_at: string;
   book?: Book;
   profile?: Profile;
+  categories?: TbrCategory[];
 }
 
 export interface Note {

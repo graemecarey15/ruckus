@@ -6,7 +6,7 @@ const COVERS_URL = 'https://covers.openlibrary.org';
 export async function searchBooks(query: string): Promise<OpenLibrarySearchResponse> {
   const params = new URLSearchParams({
     q: query,
-    limit: '20',
+    limit: '50',
     fields: 'key,title,author_name,first_publish_year,isbn,cover_i,number_of_pages_median,subject',
   });
 
@@ -14,7 +14,31 @@ export async function searchBooks(query: string): Promise<OpenLibrarySearchRespo
   if (!response.ok) {
     throw new Error('Failed to search books');
   }
-  return response.json();
+  const data: OpenLibrarySearchResponse = await response.json();
+
+  // Open Library doesn't prioritize exact matches, so we do it ourselves
+  const queryLower = query.toLowerCase().trim();
+  data.docs.sort((a, b) => {
+    const aTitle = a.title.toLowerCase();
+    const bTitle = b.title.toLowerCase();
+    const aExact = aTitle === queryLower;
+    const bExact = bTitle === queryLower;
+    const aStarts = aTitle.startsWith(queryLower);
+    const bStarts = bTitle.startsWith(queryLower);
+
+    // Exact matches first
+    if (aExact && !bExact) return -1;
+    if (bExact && !aExact) return 1;
+    // Then titles that start with query
+    if (aStarts && !bStarts) return -1;
+    if (bStarts && !aStarts) return 1;
+    // Keep original order otherwise
+    return 0;
+  });
+
+  // Return top 20 after re-sorting
+  data.docs = data.docs.slice(0, 20);
+  return data;
 }
 
 export async function searchByISBN(isbn: string): Promise<OpenLibrarySearchResponse> {

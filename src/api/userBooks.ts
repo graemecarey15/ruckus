@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { UserBook, ReadingStatus } from '@/types';
+import type { UserBook, ReadingStatus, TbrCategory } from '@/types';
 
 export async function getUserBooks(userId: string): Promise<UserBook[]> {
   const { data, error } = await supabase
@@ -9,7 +9,38 @@ export async function getUserBooks(userId: string): Promise<UserBook[]> {
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
-  return data;
+
+  // Fetch categories for TBR books
+  const tbrBooks = data.filter((b) => b.status === 'want_to_read');
+  if (tbrBooks.length > 0) {
+    const { data: bookCategories, error: catError } = await supabase
+      .from('user_book_categories')
+      .select('user_book_id, category:tbr_categories(*)')
+      .in(
+        'user_book_id',
+        tbrBooks.map((b) => b.id)
+      );
+
+    if (!catError && bookCategories) {
+      const categoryMap = bookCategories.reduce(
+        (acc, row) => {
+          if (!acc[row.user_book_id]) {
+            acc[row.user_book_id] = [];
+          }
+          acc[row.user_book_id].push(row.category as TbrCategory);
+          return acc;
+        },
+        {} as Record<string, TbrCategory[]>
+      );
+
+      return data.map((book) => ({
+        ...book,
+        categories: categoryMap[book.id] || [],
+      }));
+    }
+  }
+
+  return data.map((book) => ({ ...book, categories: [] }));
 }
 
 export async function getUserBooksByStatus(userId: string, status: ReadingStatus): Promise<UserBook[]> {

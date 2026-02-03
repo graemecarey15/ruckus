@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { OpenLibrarySearchResult, ReadingStatus } from '@/types';
 import { BookCover } from './BookCover';
 import { Button } from '@/components/ui/Button';
@@ -15,7 +16,7 @@ interface BookSearchCardProps {
 export function BookSearchCard({ result, onAdded }: BookSearchCardProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [added, setAdded] = useState(false);
+  const [addedStatus, setAddedStatus] = useState<ReadingStatus | null>(null);
   const [error, setError] = useState('');
 
   const coverUrl = result.cover_i
@@ -40,7 +41,7 @@ export function BookSearchCard({ result, onAdded }: BookSearchCardProps) {
       }
 
       await addBookToLibrary(user.id, book.id, status);
-      setAdded(true);
+      setAddedStatus(status);
       onAdded?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add book');
@@ -64,8 +65,18 @@ export function BookSearchCard({ result, onAdded }: BookSearchCardProps) {
 
           {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
 
-          {added ? (
-            <p className="text-sm text-green-600 mt-3 font-medium">Added to library!</p>
+          {addedStatus ? (
+            <div className="mt-3">
+              <p className="text-sm text-green-600 font-medium">Added to library!</p>
+              {addedStatus === 'want_to_read' && (
+                <Link
+                  to="/library?tab=want_to_read"
+                  className="inline-block mt-2 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  Go to TBR →
+                </Link>
+              )}
+            </div>
           ) : (
             <div className="flex flex-wrap gap-2 mt-3">
               <Button
@@ -73,7 +84,7 @@ export function BookSearchCard({ result, onAdded }: BookSearchCardProps) {
                 onClick={() => handleAdd('want_to_read')}
                 disabled={loading}
               >
-                Want to Read
+                TBR
               </Button>
               <Button
                 size="sm"
