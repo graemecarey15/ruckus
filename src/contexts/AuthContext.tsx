@@ -44,8 +44,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 3000);
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!mounted) return;
+
+      // Clear invalid/stale session
+      if (error) {
+        supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -55,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }).catch((err) => {
       console.error('getSession error:', err);
+      supabase.auth.signOut();
       if (mounted) setLoading(false);
     });
 
