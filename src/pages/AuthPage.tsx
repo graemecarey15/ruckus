@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { signInWithMagicLink } from '@/api/auth';
+import { sendOtpCode, verifyOtpCode } from '@/api/auth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 
@@ -9,12 +9,11 @@ export function AuthPage() {
   const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [step, setStep] = useState<'email' | 'code'>('email');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Handle auth callback and return URL
-  const isCallback = searchParams.get('type') === 'magiclink';
   const returnTo = searchParams.get('returnTo') || '/library';
 
   if (loading) {
@@ -25,22 +24,18 @@ export function AuthPage() {
     );
   }
 
-  if (user || isCallback) {
+  if (user) {
     return <Navigate to={returnTo} replace />;
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      // Store returnTo so callback can use it
-      if (returnTo !== '/library') {
-        localStorage.setItem('authReturnTo', returnTo);
-      }
-      await signInWithMagicLink(email);
-      setSubmitted(true);
+      await sendOtpCode(email);
+      setStep('code');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -48,29 +43,64 @@ export function AuthPage() {
     }
   };
 
-  if (submitted) {
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      await verifyOtpCode(email, otpCode);
+      // Auth state change will be picked up by AuthContext
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid code');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (step === 'code') {
     return (
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-        <div className="max-w-md w-full text-center">
-          <div className="text-5xl mb-4">📧</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Check your email
-          </h1>
-          <p className="text-gray-600 mb-4">
-            We sent a magic link to <strong>{email}</strong>
-          </p>
-          <p className="text-sm text-gray-500">
-            Click the link in your email to sign in. The link will expire in 1 hour.
-          </p>
-          <button
-            onClick={() => {
-              setSubmitted(false);
-              setEmail('');
-            }}
-            className="mt-6 text-indigo-600 hover:text-indigo-700 text-sm font-medium"
-          >
-            Use a different email
-          </button>
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <div className="text-5xl mb-4">📧</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              Enter your code
+            </h1>
+            <p className="text-gray-600">
+              We sent a code to <strong>{email}</strong>
+            </p>
+          </div>
+
+          <form onSubmit={handleVerifyCode} className="space-y-4">
+            <Input
+              type="text"
+              label="Verification code"
+              placeholder="12345678"
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              error={error}
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              required
+            />
+            <Button type="submit" loading={isLoading} className="w-full">
+              Verify code
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => {
+                setStep('email');
+                setOtpCode('');
+                setError('');
+              }}
+              className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+            >
+              Use a different email
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -88,7 +118,7 @@ export function AuthPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSendCode} className="space-y-4">
           <Input
             type="email"
             label="Email address"
@@ -99,12 +129,12 @@ export function AuthPage() {
             required
           />
           <Button type="submit" loading={isLoading} className="w-full">
-            Send magic link
+            Send code
           </Button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          No password needed. We'll send you a secure link to sign in.
+          No password needed. We'll send you a code to sign in.
         </p>
       </div>
     </div>

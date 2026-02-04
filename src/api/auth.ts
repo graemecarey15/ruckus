@@ -1,15 +1,26 @@
 import { supabase } from './supabase';
 
-export async function signInWithMagicLink(email: string) {
+export async function sendOtpCode(email: string) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
+      shouldCreateUser: true,
     },
   });
 
   if (error) throw error;
-  return { message: 'Check your email for the login link!' };
+  return { message: 'Check your email for the code!' };
+}
+
+export async function verifyOtpCode(email: string, token: string) {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'email',
+  });
+
+  if (error) throw error;
+  return data;
 }
 
 export async function signOut() {
