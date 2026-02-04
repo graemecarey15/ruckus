@@ -1,4 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" fill="#ffffff" rx="6" />
   <!-- Book base -->
   <path d="M8 6 L16 4 L24 6 L24 24 L16 26 L8 24 Z" fill="#4F46E5" />
   <path d="M16 4 L16 26" stroke="#3730A3" stroke-width="1" />
