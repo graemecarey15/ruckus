@@ -58,7 +58,7 @@ export function BookCard({
               </div>
             )}
           {showCategorySelector && userBook && (
-            <div className="mt-2 flex flex-wrap items-center gap-1">
+            <div className="mt-2 flex flex-wrap items-center gap-1" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
               {categories.map((cat) => (
                 <CategoryChip key={cat.id} category={cat} size="sm" />
               ))}

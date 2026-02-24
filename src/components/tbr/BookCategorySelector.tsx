@@ -7,6 +7,7 @@ interface BookCategorySelectorProps {
   categories: TbrCategory[];
   allCategories: TbrCategory[];
   onCategoriesChange: (categories: TbrCategory[]) => void;
+  showChips?: boolean;
 }
 
 export function BookCategorySelector({
@@ -14,6 +15,7 @@ export function BookCategorySelector({
   categories,
   allCategories,
   onCategoriesChange,
+  showChips = false,
 }: BookCategorySelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -57,14 +59,30 @@ export function BookCategorySelector({
       <button
         onClick={() => setIsOpen(!isOpen)}
         disabled={loading}
-        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+        className={`inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-900 rounded transition-colors ${showChips ? 'flex-wrap py-1' : 'px-2 py-1 text-xs hover:bg-gray-100'}`}
       >
         {categories.length === 0 ? (
           <>
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
             </svg>
-            Add category
+            <span className="text-xs">Add category</span>
+          </>
+        ) : showChips ? (
+          <>
+            {categories.map((cat) => (
+              <span
+                key={cat.id}
+                className="inline-flex items-center px-2 py-0.5 text-xs rounded-full font-medium"
+                style={{
+                  backgroundColor: `${cat.color}20`,
+                  color: cat.color,
+                  border: `1px solid ${cat.color}40`,
+                }}
+              >
+                {cat.name}
+              </span>
+            ))}
           </>
         ) : (
           <>
@@ -79,11 +97,11 @@ export function BookCategorySelector({
               ))}
             </div>
             {categories.length > 3 && (
-              <span className="text-gray-500">+{categories.length - 3}</span>
+              <span className="text-gray-500 text-xs">+{categories.length - 3}</span>
             )}
           </>
         )}
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>

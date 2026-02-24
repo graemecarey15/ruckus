@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getBook } from '@/api/books';
 import { getUserBook, updateReadingStatus, updateProgress, removeFromLibrary } from '@/api/userBooks';
 import { getNotes, createNote, updateNote, deleteNote } from '@/api/notes';
-import type { Book, UserBook, Note, ReadingStatus } from '@/types';
+import type { Book, UserBook, Note, ReadingStatus, TbrCategory } from '@/types';
 import { BookCover } from '@/components/books/BookCover';
 import { StatusSelector } from '@/components/books/StatusSelector';
 import { ProgressTracker } from '@/components/books/ProgressTracker';
@@ -12,6 +12,8 @@ import { NotesList } from '@/components/notes/NotesList';
 import { NoteEditor } from '@/components/notes/NoteEditor';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
+import { BookCategorySelector } from '@/components/tbr/BookCategorySelector';
+import { getUserTbrCategories, getBookCategories } from '@/api/tbrCategories';
 
 export function BookDetail() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +26,8 @@ export function BookDetail() {
   const [loading, setLoading] = useState(true);
   const [showNoteEditor, setShowNoteEditor] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [allCategories, setAllCategories] = useState<TbrCategory[]>([]);
+  const [bookCategories, setBookCategories] = useState<TbrCategory[]>([]);
 
   useEffect(() => {
     if (id && user) {
@@ -35,17 +39,23 @@ export function BookDetail() {
     if (!id || !user) return;
 
     try {
-      const [bookData, userBookData] = await Promise.all([
+      const [bookData, userBookData, categoriesData] = await Promise.all([
         getBook(id),
         getUserBook(user.id, id),
+        getUserTbrCategories(user.id),
       ]);
 
       setBook(bookData);
       setUserBook(userBookData);
+      setAllCategories(categoriesData);
 
       if (userBookData) {
-        const notesData = await getNotes(userBookData.id);
+        const [notesData, bookCats] = await Promise.all([
+          getNotes(userBookData.id),
+          getBookCategories(userBookData.id),
+        ]);
         setNotes(notesData);
+        setBookCategories(bookCats);
       }
     } catch (error) {
       console.error('Failed to load book:', error);
@@ -162,6 +172,18 @@ export function BookDetail() {
                 <Button variant="ghost" size="sm" onClick={handleRemoveBook}>
                   Remove from library
                 </Button>
+              </div>
+            )}
+
+            {userBook && allCategories.length > 0 && (
+              <div className="mt-4">
+                <BookCategorySelector
+                  userBookId={userBook.id}
+                  categories={bookCategories}
+                  allCategories={allCategories}
+                  onCategoriesChange={setBookCategories}
+                  showChips
+                />
               </div>
             )}
           </div>
