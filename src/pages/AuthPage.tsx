@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendOtpCode, verifyOtpCode } from '@/api/auth';
@@ -15,6 +15,13 @@ export function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const returnTo = searchParams.get('returnTo') || '/library';
+
+  // Store returnTo so the magic link flow (via /auth/callback) can pick it up
+  useEffect(() => {
+    if (returnTo && returnTo !== '/library') {
+      localStorage.setItem('authReturnTo', returnTo);
+    }
+  }, [returnTo]);
 
   if (loading) {
     return (
@@ -65,10 +72,13 @@ export function AuthPage() {
           <div className="text-center mb-8">
             <div className="text-5xl mb-4">📧</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Enter your code
+              Check your email
             </h1>
             <p className="text-gray-600">
               We sent a code to <strong>{email}</strong>
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              Enter the code below, or tap the magic link in the email
             </p>
           </div>
 
@@ -129,7 +139,7 @@ export function AuthPage() {
             required
           />
           <Button type="submit" loading={isLoading} className="w-full">
-            Send code
+            Send Code + Link
           </Button>
         </form>
 
