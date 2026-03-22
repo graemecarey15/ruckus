@@ -5,6 +5,7 @@ export async function sendOtpCode(email: string) {
     email,
     options: {
       shouldCreateUser: true,
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
     },
   });
 
