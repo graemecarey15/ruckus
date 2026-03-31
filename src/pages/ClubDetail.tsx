@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { getClub, getClubMembers, leaveClub, removeMember, deleteClub, getClubSuggestions, removeSuggestion, getVotesForSuggestion, getCommentsForSuggestion } from '@/api/clubs';
+import { getClub, getClubMembers, leaveClub, removeMember, deleteClub, updateClub, getClubSuggestions, removeSuggestion, getVotesForSuggestion, getCommentsForSuggestion } from '@/api/clubs';
 import { getUserBooks, updateProgress, addBookToLibrary } from '@/api/userBooks';
 import { getPublicNotesForUser, createNote, deleteNote } from '@/api/notes';
 import type { Club, ClubMember, UserBook, Book, Note, ClubBookSuggestion, SuggestionVote, SuggestionComment } from '@/types';
@@ -32,6 +32,12 @@ export function ClubDetail() {
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [suggestionVotes, setSuggestionVotes] = useState<Map<string, SuggestionVote[]>>(new Map());
   const [suggestionComments, setSuggestionComments] = useState<Map<string, SuggestionComment[]>>(new Map());
+  const [visibleNotes, setVisibleNotes] = useState(5);
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -258,6 +264,31 @@ export function ClubDetail() {
     setSuggestionComments((prev) => new Map(prev).set(suggestionId, comments));
   };
 
+  const startEditing = () => {
+    if (!club) return;
+    setEditName(club.name);
+    setEditDescription(club.description || '');
+    setEditing(true);
+  };
+
+  const handleSaveClub = async () => {
+    if (!club || !editName.trim()) return;
+    setSaving(true);
+    try {
+      const updated = await updateClub(club.id, {
+        name: editName.trim(),
+        description: editDescription.trim() || null,
+      });
+      setClub(updated);
+      setEditing(false);
+    } catch (err) {
+      console.error('Failed to update club:', err);
+      alert('Failed to update club');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -303,17 +334,51 @@ export function ClubDetail() {
                 <span className="text-3xl">📚</span>
               </div>
             )}
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{club.name}</h1>
-              {club.description && (
-                <p className="text-gray-600 mt-1">{club.description}</p>
+            <div className="flex-1 min-w-0">
+              {editing ? (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full text-2xl font-bold text-gray-900 px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Club name"
+                  />
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="w-full text-gray-600 px-2 py-1 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                    placeholder="Description (optional)"
+                    rows={2}
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleSaveClub} disabled={saving || !editName.trim()}>
+                      {saving ? 'Saving...' : 'Save'}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={saving}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-bold text-gray-900">{club.name}</h1>
+                  {club.description && (
+                    <p className="text-gray-600 mt-1">{club.description}</p>
+                  )}
+                  <p className="text-sm text-gray-500 mt-2">
+                    {members.length} member{members.length !== 1 && 's'}
+                  </p>
+                </>
               )}
-              <p className="text-sm text-gray-500 mt-2">
-                {members.length} member{members.length !== 1 && 's'}
-              </p>
             </div>
           </div>
           <div className="flex gap-2">
+            {isOwner && !editing && (
+              <Button variant="ghost" size="sm" onClick={startEditing}>
+                Edit
+              </Button>
+            )}
             <Button variant="secondary" size="sm" onClick={() => setShowInviteCode(!showInviteCode)}>
               {showInviteCode ? 'Hide Code' : 'Invite'}
             </Button>
@@ -525,8 +590,7 @@ export function ClubDetail() {
           const allNotes = members.flatMap((member) => {
             const notes = memberNotes.get(member.user_id) || [];
             return notes.map((n) => ({ ...n, member }));
-          }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, 10);
+          }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
           if (allNotes.length === 0) {
             return (
@@ -534,53 +598,81 @@ export function ClubDetail() {
             );
           }
 
+          const displayedNotes = allNotes.slice(0, visibleNotes);
+          const hasMore = allNotes.length > visibleNotes;
+
           return (
             <div className="space-y-4">
-              {allNotes.map((note) => (
-                <div key={note.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 relative group">
-                  <div className="flex gap-4">
-                    <BookCover src={note.user_book?.book?.cover_url} title={note.user_book?.book?.title || 'Book'} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Avatar
-                          src={note.member.profile?.avatar_url}
-                          name={note.member.profile?.display_name || note.member.profile?.username || ''}
-                          size="sm"
-                        />
-                        <span className="text-sm font-medium text-gray-900">
-                          {note.member.profile?.display_name || note.member.profile?.username}
-                        </span>
-                        <span className="text-xs text-gray-400">
-                          {new Date(note.created_at).toLocaleDateString()}
-                        </span>
+              {displayedNotes.map((note) => {
+                const isExpanded = expandedNotes.has(note.id);
+                return (
+                  <div key={note.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 relative group">
+                    <div className="flex gap-4">
+                      <BookCover src={note.user_book?.book?.cover_url} title={note.user_book?.book?.title || 'Book'} size="sm" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Avatar
+                            src={note.member.profile?.avatar_url}
+                            name={note.member.profile?.display_name || note.member.profile?.username || ''}
+                            size="sm"
+                          />
+                          <span className="text-sm font-medium text-gray-900">
+                            {note.member.profile?.display_name || note.member.profile?.username}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(note.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-1">
+                          on <span className="font-medium">{note.user_book?.book?.title}</span>
+                          {note.page_number && ` (p. ${note.page_number})`}
+                          {note.chapter && ` - ${note.chapter}`}
+                        </p>
+                        {note.title && (
+                          <h4 className="text-sm font-medium text-gray-800 mb-1">{note.title}</h4>
+                        )}
+                        <p className={`text-sm text-gray-700 whitespace-pre-wrap ${isExpanded ? '' : 'line-clamp-3'}`}>{note.content}</p>
+                        <button
+                          onClick={() => setExpandedNotes((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(note.id)) {
+                              next.delete(note.id);
+                            } else {
+                              next.add(note.id);
+                            }
+                            return next;
+                          })}
+                          className="text-xs text-indigo-600 hover:text-indigo-700 mt-1"
+                        >
+                          {isExpanded ? 'Show less' : 'Show more'}
+                        </button>
+                        {note.is_summary && (
+                          <span className="inline-block mt-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">Summary</span>
+                        )}
                       </div>
-                      <p className="text-xs text-gray-500 mb-1">
-                        on <span className="font-medium">{note.user_book?.book?.title}</span>
-                        {note.page_number && ` (p. ${note.page_number})`}
-                        {note.chapter && ` - ${note.chapter}`}
-                      </p>
-                      {note.title && (
-                        <h4 className="text-sm font-medium text-gray-800 mb-1">{note.title}</h4>
-                      )}
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap line-clamp-3">{note.content}</p>
-                      {note.is_summary && (
-                        <span className="inline-block mt-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">Summary</span>
-                      )}
                     </div>
+                    {isOwner && (
+                      <button
+                        onClick={() => handleDeleteNote(note.id, note.member.user_id)}
+                        className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete note"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
-                  {isOwner && (
-                    <button
-                      onClick={() => handleDeleteNote(note.id, note.member.user_id)}
-                      className="absolute top-2 right-2 p-1.5 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Delete note"
-                    >
-                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
+              {hasMore && (
+                <button
+                  onClick={() => setVisibleNotes((prev) => prev + 5)}
+                  className="w-full py-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  Load more notes ({allNotes.length - visibleNotes} remaining)
+                </button>
+              )}
             </div>
           );
         })()}

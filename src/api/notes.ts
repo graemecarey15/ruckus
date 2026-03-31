@@ -60,14 +60,24 @@ export async function deleteNote(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function getUserNotes(userId: string): Promise<(Note & { user_book: { book: { id: string; title: string; cover_url: string | null } } })[]> {
+  const { data, error } = await supabase
+    .from('notes')
+    .select('*, user_book:user_books(book:books(id, title, cover_url))')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data as (Note & { user_book: { book: { id: string; title: string; cover_url: string | null } } })[];
+}
+
 export async function getPublicNotesForUser(userId: string): Promise<(Note & { user_book: { book: { id: string; title: string; cover_url: string | null } } })[]> {
   const { data, error } = await supabase
     .from('notes')
     .select('*, user_book:user_books(book:books(id, title, cover_url))')
     .eq('user_id', userId)
     .eq('is_private', false)
-    .order('created_at', { ascending: false })
-    .limit(10);
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
   return data as (Note & { user_book: { book: { id: string; title: string; cover_url: string | null } } })[];
