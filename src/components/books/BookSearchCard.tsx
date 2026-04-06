@@ -21,7 +21,7 @@ export function BookSearchCard({ result, onAdded }: BookSearchCardProps) {
 
   const coverUrl = result.cover_i
     ? getCoverUrl(String(result.cover_i), 'id', 'M')
-    : null;
+    : result.cover_url || null;
 
   const handleAdd = async (status: ReadingStatus) => {
     if (!user) return;

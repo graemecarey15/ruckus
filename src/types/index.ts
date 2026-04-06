@@ -137,8 +137,10 @@ export interface OpenLibrarySearchResult {
   first_publish_year?: number;
   isbn?: string[];
   cover_i?: number;
+  cover_url?: string;
   number_of_pages_median?: number;
   subject?: string[];
+  source?: 'openlibrary' | 'google';
 }
 
 export interface OpenLibrarySearchResponse {

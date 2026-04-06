@@ -1,9 +1,10 @@
 import type { OpenLibrarySearchResponse, OpenLibrarySearchResult, Book } from '@/types';
+import { searchGoogleBooks } from './googleBooks';
 
 const BASE_URL = 'https://openlibrary.org';
 const COVERS_URL = 'https://covers.openlibrary.org';
 
-export async function searchBooks(query: string): Promise<OpenLibrarySearchResponse> {
+async function searchOpenLibrary(query: string): Promise<OpenLibrarySearchResult[]> {
   const params = new URLSearchParams({
     q: query,
     limit: '50',
@@ -12,13 +13,49 @@ export async function searchBooks(query: string): Promise<OpenLibrarySearchRespo
 
   const response = await fetch(`${BASE_URL}/search.json?${params}`);
   if (!response.ok) {
-    throw new Error('Failed to search books');
+    return [];
   }
   const data: OpenLibrarySearchResponse = await response.json();
+  return data.docs.map((doc) => ({ ...doc, source: 'openlibrary' as const }));
+}
 
-  // Open Library doesn't prioritize exact matches, so we do it ourselves
+function deduplicateResults(results: OpenLibrarySearchResult[]): OpenLibrarySearchResult[] {
+  const seen = new Map<string, OpenLibrarySearchResult>();
+
+  for (const result of results) {
+    // Build a dedup key from normalized title + first author
+    const title = result.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const author = (result.author_name?.[0] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const key = `${title}|${author}`;
+
+    if (!seen.has(key)) {
+      seen.set(key, result);
+    }
+  }
+
+  return Array.from(seen.values());
+}
+
+function filterByRelevance(results: OpenLibrarySearchResult[], query: string): OpenLibrarySearchResult[] {
   const queryLower = query.toLowerCase().trim();
-  data.docs.sort((a, b) => {
+  // Extract meaningful words (skip short common words)
+  const stopWords = new Set(['the', 'a', 'an', 'of', 'and', 'in', 'on', 'at', 'to', 'for', 'by', 'is', 'it']);
+  const queryWords = queryLower.split(/\s+/).filter((w) => w.length > 1 && !stopWords.has(w));
+  if (queryWords.length === 0) return results;
+
+  return results.filter((result) => {
+    const title = result.title.toLowerCase();
+    const authors = (result.author_name || []).join(' ').toLowerCase();
+    const text = `${title} ${authors}`;
+    // Result must contain at least one meaningful query word
+    return queryWords.some((word) => text.includes(word));
+  });
+}
+
+function rankResults(results: OpenLibrarySearchResult[], query: string): OpenLibrarySearchResult[] {
+  const queryLower = query.toLowerCase().trim();
+
+  return results.sort((a, b) => {
     const aTitle = a.title.toLowerCase();
     const bTitle = b.title.toLowerCase();
     const aExact = aTitle === queryLower;
@@ -26,19 +63,33 @@ export async function searchBooks(query: string): Promise<OpenLibrarySearchRespo
     const aStarts = aTitle.startsWith(queryLower);
     const bStarts = bTitle.startsWith(queryLower);
 
-    // Exact matches first
     if (aExact && !bExact) return -1;
     if (bExact && !aExact) return 1;
-    // Then titles that start with query
     if (aStarts && !bStarts) return -1;
     if (bStarts && !aStarts) return 1;
-    // Keep original order otherwise
     return 0;
   });
+}
 
-  // Return top 20 after re-sorting
-  data.docs = data.docs.slice(0, 20);
-  return data;
+export async function searchBooks(query: string): Promise<OpenLibrarySearchResponse> {
+  const [olResults, gbResults] = await Promise.all([
+    searchOpenLibrary(query),
+    searchGoogleBooks(query),
+  ]);
+
+  // Filter irrelevant results, rank each source, then interleave
+  const rankedOL = rankResults(filterByRelevance(olResults, query), query);
+  const rankedGB = rankResults(filterByRelevance(gbResults, query), query);
+
+  const interleaved: OpenLibrarySearchResult[] = [];
+  const maxLen = Math.max(rankedOL.length, rankedGB.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (i < rankedOL.length) interleaved.push(rankedOL[i]);
+    if (i < rankedGB.length) interleaved.push(rankedGB[i]);
+  }
+
+  const deduped = deduplicateResults(interleaved).slice(0, 20);
+  return { numFound: deduped.length, docs: deduped };
 }
 
 export async function searchByISBN(isbn: string): Promise<OpenLibrarySearchResponse> {
@@ -61,14 +112,22 @@ export function transformToBook(doc: OpenLibrarySearchResult): Omit<Book, 'id' |
   const isbn13 = doc.isbn?.find((i) => i.length === 13) || null;
   const isbn10 = doc.isbn?.find((i) => i.length === 10) || null;
 
+  const coverUrl = doc.cover_i
+    ? getCoverUrl(String(doc.cover_i), 'id', 'M')
+    : doc.cover_url || null;
+
+  const openLibraryId = doc.key.startsWith('/works/')
+    ? doc.key.replace('/works/', '')
+    : null;
+
   return {
     title: doc.title,
     subtitle: null,
     authors: doc.author_name || ['Unknown'],
     isbn_13: isbn13,
     isbn_10: isbn10,
-    open_library_id: doc.key.replace('/works/', ''),
-    cover_url: doc.cover_i ? getCoverUrl(String(doc.cover_i), 'id', 'M') : null,
+    open_library_id: openLibraryId,
+    cover_url: coverUrl,
     description: null,
     page_count: doc.number_of_pages_median || null,
     publish_year: doc.first_publish_year || null,
