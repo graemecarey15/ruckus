@@ -40,9 +40,28 @@ export async function createBook(book: Omit<Book, 'id' | 'created_at' | 'updated
   return data;
 }
 
+export async function getBookByIsbn(isbn13: string): Promise<Book | null> {
+  const { data, error } = await supabase
+    .from('books')
+    .select('*')
+    .eq('isbn_13', isbn13)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+  return data;
+}
+
 export async function getOrCreateBook(book: Omit<Book, 'id' | 'created_at' | 'updated_at'>): Promise<Book> {
   if (book.open_library_id) {
     const existing = await getBookByOpenLibraryId(book.open_library_id);
+    if (existing) return existing;
+  }
+
+  if (book.isbn_13) {
+    const existing = await getBookByIsbn(book.isbn_13);
     if (existing) return existing;
   }
 

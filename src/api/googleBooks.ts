@@ -47,6 +47,57 @@ export async function searchGoogleBooks(query: string): Promise<OpenLibrarySearc
   return data.items.map((item) => toSearchResult(item));
 }
 
+export interface BookSuggestion {
+  title: string;
+  author: string;
+  year?: number;
+  coverUrl?: string;
+}
+
+export async function suggestBooks(query: string): Promise<BookSuggestion[]> {
+  const params = new URLSearchParams({
+    q: `intitle:"${query}"`,
+    maxResults: '5',
+    fields: 'items(volumeInfo(title,authors,publishedDate,imageLinks/smallThumbnail))',
+  });
+
+  const apiKey = import.meta.env.VITE_GOOGLE_BOOKS_API_KEY;
+  if (apiKey) {
+    params.set('key', apiKey);
+  }
+
+  const response = await fetch(`${BASE_URL}?${params}`);
+  if (!response.ok) return [];
+
+  const data: GoogleBooksResponse = await response.json();
+  if (!data.items) return [];
+
+  const seen = new Set<string>();
+  const suggestions: BookSuggestion[] = [];
+
+  for (const item of data.items) {
+    const vi = item.volumeInfo;
+    const key = `${vi.title.toLowerCase()}|${(vi.authors?.[0] || '').toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    const year = vi.publishedDate ? parseInt(vi.publishedDate.slice(0, 4), 10) : undefined;
+    let coverUrl: string | undefined;
+    if (vi.imageLinks?.smallThumbnail) {
+      coverUrl = vi.imageLinks.smallThumbnail.replace('http://', 'https://');
+    }
+
+    suggestions.push({
+      title: vi.title,
+      author: vi.authors?.join(', ') || 'Unknown author',
+      year: Number.isNaN(year!) ? undefined : year,
+      coverUrl,
+    });
+  }
+
+  return suggestions;
+}
+
 function toSearchResult(volume: GoogleBooksVolume): OpenLibrarySearchResult {
   const vi = volume.volumeInfo;
   const isbns = vi.industryIdentifiers?.map((id) => id.identifier) ?? [];

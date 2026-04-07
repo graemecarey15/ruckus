@@ -64,7 +64,7 @@ export function BookSearch() {
       {!loading && searched && results.length === 0 && (
         <EmptyState
           title="No books found"
-          description="Try a different search term or check your spelling."
+          description={`We couldn't find any books matching "${query}". Try checking your spelling or searching by author name.`}
         />
       )}
 
