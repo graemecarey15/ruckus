@@ -12,9 +12,10 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
 import { CategoryFilter, type CategoryFilterValue } from '@/components/tbr/CategoryFilter';
 import { ManageCategoriesModal } from '@/components/tbr/ManageCategoriesModal';
+import { CalendarView } from '@/components/library/CalendarView';
 
 type NoteWithBook = Note & { user_book: { book: { id: string; title: string; cover_url: string | null } } };
-type TabId = 'currently_reading' | 'want_to_read' | 'finished' | 'notes';
+type TabId = 'currently_reading' | 'want_to_read' | 'finished' | 'notes' | 'calendar';
 
 export function MyLibrary() {
   const { user } = useAuth();
@@ -25,7 +26,7 @@ export function MyLibrary() {
   const [loading, setLoading] = useState(true);
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(
-    tabParam && ['currently_reading', 'want_to_read', 'finished', 'notes'].includes(tabParam)
+    tabParam && ['currently_reading', 'want_to_read', 'finished', 'notes', 'calendar'].includes(tabParam)
       ? tabParam
       : 'currently_reading'
   );
@@ -119,6 +120,10 @@ export function MyLibrary() {
       label: 'Notes',
       count: notes.length,
     },
+    {
+      id: 'calendar' as const,
+      label: 'Calendar',
+    },
   ];
 
   if (loading) {
@@ -160,7 +165,9 @@ export function MyLibrary() {
       )}
 
       <div className="mt-6">
-        {activeTab === 'notes' ? (
+        {activeTab === 'calendar' ? (
+          <CalendarView books={books} />
+        ) : activeTab === 'notes' ? (
           notes.length === 0 ? (
             <p className="text-center text-gray-500 py-8">You haven't written any notes yet.</p>
           ) : (
