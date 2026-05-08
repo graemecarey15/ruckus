@@ -316,6 +316,7 @@ function MonthGrid({
                   const isSelectedStart = selectedBookEndpoints?.startKey === key;
                   const isSelectedEnd = selectedBookEndpoints?.endKey === key;
                   const isOnSelectedTrail = isSelectedStart || isSelectedEnd;
+                  const isTodayEndpoint = isSelectedEnd && !!selectedBookEndpoints?.endIsToday;
                   const dimmed = !!selectedBookId && !isOnSelectedTrail;
 
                   // On the selected trail's endpoints, render the SELECTED book's cover/dot.
@@ -337,13 +338,13 @@ function MonthGrid({
                   return (
                     <button
                       key={i}
-                      ref={hasActivity ? setCellRef(key) : undefined}
+                      ref={hasActivity || isOnSelectedTrail ? setCellRef(key) : undefined}
                       onClick={() => onCellClick(key)}
                       className={`relative aspect-square text-[11px] rounded flex items-center justify-center overflow-hidden transition-opacity
                         ${hasActivity
                           ? 'text-gray-900 font-medium hover:ring-1 hover:ring-gray-400 cursor-pointer'
                           : 'text-gray-400'}
-                        ${isOnSelectedTrail ? 'ring-2 ring-indigo-600' : ''}
+                        ${isOnSelectedTrail ? (isTodayEndpoint ? 'ring-2 ring-gray-400' : 'ring-2 ring-indigo-600') : ''}
                         ${dimmed ? 'opacity-30' : ''}`}
                       disabled={!hasActivity}
                     >
@@ -366,20 +367,25 @@ function MonthGrid({
                             )}
                           </span>
                         </>
-                      ) : (
+                      ) : hasActivity && cellBook ? (
                         <>
-                          <span className="relative z-10">{day}</span>
-                          {hasActivity && (
-                            <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
-                              {showStartDot && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
-                              )}
-                              {showFinishDot && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              )}
-                            </span>
-                          )}
+                          <span className="absolute top-0 left-0.5 text-[9px] font-semibold text-gray-900 leading-none pt-0.5">
+                            {day}
+                          </span>
+                          <span className="absolute inset-x-0.5 top-1/2 -translate-y-1/2 text-[8px] leading-tight text-gray-700 text-center break-words line-clamp-2">
+                            {cellBook.book.title}
+                          </span>
+                          <span className="absolute bottom-0 right-0 flex gap-0.5 p-0.5">
+                            {showStartDot && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
+                            )}
+                            {showFinishDot && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            )}
+                          </span>
                         </>
+                      ) : (
+                        <span className="relative z-10">{day}</span>
                       )}
                     </button>
                   );
