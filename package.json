@@ -7,9 +7,18 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "native:sync": "npm run build && npx cap sync",
+    "native:icons": "npx capacitor-assets generate --iconBackgroundColor '#4f46e5' --iconBackgroundColorDark '#312e81' --splashBackgroundColor '#4f46e5' --splashBackgroundColorDark '#312e81'",
+    "ios:open": "npx cap open ios",
+    "android:open": "npx cap open android",
+    "android:build": "npm run native:sync && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.2",
+    "@capacitor/cli": "^8.3.2",
+    "@capacitor/core": "^8.3.2",
+    "@capacitor/ios": "^8.3.2",
     "@hookform/resolvers": "^5.2.2",
     "@supabase/supabase-js": "^2.90.1",
     "@tanstack/react-query": "^5.90.16",
@@ -20,6 +29,7 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@eslint/js": "^9.39.1",
     "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^24.10.1",
