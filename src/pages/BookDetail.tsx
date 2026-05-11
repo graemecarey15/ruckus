@@ -14,6 +14,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/Button';
 import { BookCategorySelector } from '@/components/tbr/BookCategorySelector';
 import { getUserTbrCategories, getBookCategories } from '@/api/tbrCategories';
+import { shareNative } from '@/native/capacitor';
 
 export function BookDetail() {
   const { id } = useParams<{ id: string }>();
@@ -167,8 +168,21 @@ export function BookDetail() {
             )}
 
             {userBook && (
-              <div className="mt-6 flex items-center gap-4">
+              <div className="mt-6 flex flex-wrap items-center gap-2">
                 <StatusSelector status={userBook.status} onChange={handleStatusChange} />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    shareNative({
+                      title: book.title,
+                      text: `Check out "${book.title}" by ${book.authors.join(', ')}`,
+                      url: `https://ruckus.goodertechs.com/book/${book.id}`,
+                    })
+                  }
+                >
+                  Share
+                </Button>
                 <Button variant="ghost" size="sm" onClick={handleRemoveBook}>
                   Remove from library
                 </Button>

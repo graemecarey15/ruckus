@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ReadingStatus } from '@/types';
+import { tapHaptic } from '@/native/capacitor';
 
 interface StatusSelectorProps {
   status: ReadingStatus;
@@ -27,6 +28,7 @@ export function StatusSelector({ status, onChange }: StatusSelectorProps) {
     setLoading(true);
     try {
       await onChange(newStatus);
+      tapHaptic();
     } finally {
       setLoading(false);
       setIsOpen(false);

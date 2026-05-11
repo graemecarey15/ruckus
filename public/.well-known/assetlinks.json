@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.goodertechs.ruckus",
+      "sha256_cert_fingerprints": [
+        "11:F4:42:0C:51:F1:03:43:A7:57:32:D6:5A:14:D7:65:FE:99:16:15:CB:79:C9:87:0D:E9:AC:AC:5C:DA:42:15"
+      ]
+    }
+  }
+]

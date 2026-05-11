@@ -4,7 +4,7 @@ android {
     namespace = "com.goodertechs.ruckus"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.goodertechs.ruckus"
+        applicationId "app.goodertechs.ruckus"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

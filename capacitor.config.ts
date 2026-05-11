@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.goodertechs.ruckus',
+  appId: 'app.goodertechs.ruckus',
   appName: 'Ruckus',
   webDir: 'dist'
 };

@@ -1,11 +1,12 @@
 import { supabase } from './supabase';
+import { siteUrl } from '@/native/capacitor';
 
 export async function sendOtpCode(email: string) {
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
+      emailRedirectTo: `${siteUrl()}/auth/callback`,
     },
   });
 
