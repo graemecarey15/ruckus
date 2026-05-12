@@ -1,21 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Background -->
-  <rect width="32" height="32" fill="#ffffff" rx="6" />
-  <!-- Book base -->
-  <path d="M8 6 L16 4 L24 6 L24 24 L16 26 L8 24 Z" fill="#4F46E5" />
-  <path d="M16 4 L16 26" stroke="#3730A3" stroke-width="1" />
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#4F46E5"/>
 
-  <!-- Flying pages -->
-  <rect x="21" y="2" width="7" height="5" rx="1" fill="#E0E7FF" transform="rotate(30 25 4)" />
-  <rect x="24" y="6" width="6" height="4" rx="1" fill="#C7D2FE" transform="rotate(50 27 8)" />
-  <rect x="4" y="2" width="7" height="5" rx="1" fill="#E0E7FF" transform="rotate(-30 7 4)" />
-  <rect x="2" y="6" width="6" height="4" rx="1" fill="#C7D2FE" transform="rotate(-50 5 8)" />
+  <!-- v2 rays (unchanged) -->
+  <g stroke="#FCD34D" stroke-width="48" stroke-linecap="round" fill="none">
+    <line x1="512" y1="110" x2="512" y2="270"/>
+    <line x1="350" y1="160" x2="410" y2="300"/>
+    <line x1="674" y1="160" x2="614" y2="300"/>
+    <line x1="200" y1="310" x2="320" y2="380"/>
+    <line x1="824" y1="310" x2="704" y2="380"/>
+  </g>
 
-  <!-- Motion lines (mirrored) -->
-  <line x1="27" y1="4" x2="30" y2="2" stroke="#818CF8" stroke-width="1.5" stroke-linecap="round" />
-  <line x1="28" y1="8" x2="31" y2="7" stroke="#818CF8" stroke-width="1.5" stroke-linecap="round" />
-  <line x1="26" y1="11" x2="29" y2="12" stroke="#818CF8" stroke-width="1.5" stroke-linecap="round" />
-  <line x1="5" y1="4" x2="2" y2="2" stroke="#818CF8" stroke-width="1.5" stroke-linecap="round" />
-  <line x1="4" y1="8" x2="1" y2="7" stroke="#818CF8" stroke-width="1.5" stroke-linecap="round" />
-  <line x1="6" y1="11" x2="3" y2="12" stroke="#818CF8" stroke-width="1.5" stroke-linecap="round" />
+  <!-- R raised another 20px (560 → 540) -->
+  <text x="512" y="540"
+        font-family="Helvetica, Arial, sans-serif"
+        font-weight="900"
+        font-size="210"
+        fill="white"
+        text-anchor="middle">R</text>
+
+  <!-- v2 book (unchanged) -->
+  <g>
+    <path d="M 130,510 Q 320,470 510,650 L 510,890 Q 320,820 130,860 Z" fill="white"/>
+    <path d="M 514,650 Q 704,470 894,510 L 894,860 Q 704,820 514,890 Z" fill="white"/>
+    <path d="M 510,650 L 510,890 L 514,890 L 514,650 Z" fill="#312E81" opacity="0.25"/>
+    <g stroke="#6366F1" stroke-width="14" stroke-linecap="round" opacity="0.55">
+      <path d="M 200,580 Q 350,570 470,680" fill="none"/>
+      <path d="M 200,660 Q 350,650 470,740" fill="none"/>
+      <path d="M 200,740 Q 350,730 470,800" fill="none"/>
+      <path d="M 554,680 Q 674,570 824,580" fill="none"/>
+      <path d="M 554,740 Q 674,650 824,660" fill="none"/>
+      <path d="M 554,800 Q 674,730 824,740" fill="none"/>
+    </g>
+  </g>
 </svg>
