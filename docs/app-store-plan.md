@@ -41,7 +41,7 @@ Both platforms need a real manifest and icons regardless of native shell.
 ### 2. Install + initialize Capacitor
 ```bash
 npm i @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android
-npx cap init Ruckus com.goodertechs.ruckus --web-dir=dist
+npx cap init Ruckus app.goodertechs.ruckus --web-dir=dist
 npx cap add ios
 npx cap add android
 ```
@@ -83,7 +83,7 @@ Both stores will need:
 
 ### Apple App Store
 - $99/yr Apple Developer Program enrollment.
-- Bundle ID: `com.goodertechs.ruckus` (must be unique across App Store).
+- Bundle ID: `app.goodertechs.ruckus` (must be unique across App Store).
 - App Store Connect listing.
 - TestFlight for beta before release.
 - Review time: typically 24–48 hours, sometimes longer on first submission.
@@ -91,7 +91,7 @@ Both stores will need:
 
 ### Google Play Store
 - $25 one-time Google Play Console fee.
-- Package name: `com.goodertechs.ruckus`.
+- Package name: `app.goodertechs.ruckus`.
 - Internal Testing → Closed Testing → Production rollout.
 - Review time: hours for established accounts, can be a few days for first app.
 - Build CLI from project root global instructions:
@@ -111,7 +111,7 @@ When the web build is sufficient to update the app's behavior (no new native plu
 ## Decisions
 
 - **Apple Developer enrollment**: starting on the existing **individual** account. Will transfer to GooderTechs (company) via Apple's App Transfer flow once the LLC + D-U-N-S are sorted. Reviews, ratings, downloads, and update path all carry over.
-- **Bundle ID**: **`com.goodertechs.ruckus`** — registered now under the individual account so the eventual company transfer is friction-free. Bundle IDs are immutable; using the company namespace from day one avoids orphaning the app later.
+- **Bundle ID**: **`app.goodertechs.ruckus`** — registered now under the individual account so the eventual company transfer is friction-free. Bundle IDs are immutable; using the company namespace from day one avoids orphaning the app later.
 - **Pricing**: free for v1. No StoreKit / Play Billing setup. Freemium subscriptions are on the roadmap once premium features actually exist.
 - **Push notifications**: deferred to v1.1+. Not building APNs/FCM/Edge Function plumbing now.
 - **Native capabilities for App Review** (covering the "thin wrapper" risk):

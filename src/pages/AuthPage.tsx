@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { sendOtpCode, verifyOtpCode } from '@/api/auth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { isNative } from '@/native/capacitor';
 
 export function AuthPage() {
   const { user, loading } = useAuth();
@@ -78,7 +79,9 @@ export function AuthPage() {
               We sent a code to <strong>{email}</strong>
             </p>
             <p className="text-gray-500 text-sm mt-2">
-              Enter the code below, or tap the magic link in the email
+              {isNative
+                ? 'Enter the code below to sign in'
+                : 'Enter the code below, or tap the magic link in the email'}
             </p>
           </div>
 
@@ -139,7 +142,7 @@ export function AuthPage() {
             required
           />
           <Button type="submit" loading={isLoading} className="w-full">
-            Send Code + Link
+            {isNative ? 'Send code' : 'Send Code + Link'}
           </Button>
         </form>
 

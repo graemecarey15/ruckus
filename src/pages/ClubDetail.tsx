@@ -13,6 +13,7 @@ import { ProgressBar } from '@/components/books/ProgressBar';
 import { Avatar } from '@/components/ui/Avatar';
 import { SuggestBookModal } from '@/components/clubs/SuggestBookModal';
 import { SuggestionCard } from '@/components/clubs/SuggestionCard';
+import { siteUrl } from '@/native/capacitor';
 
 export function ClubDetail() {
   const { id } = useParams<{ id: string }>();
@@ -137,7 +138,7 @@ export function ClubDetail() {
     }
   };
 
-  const inviteLink = club ? `${window.location.origin}/join/${club.invite_code}` : '';
+  const inviteLink = club ? `${siteUrl()}/join/${club.invite_code}` : '';
 
   const handleRemoveMember = async (memberId: string) => {
     if (!club) return;
