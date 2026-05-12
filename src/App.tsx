@@ -16,6 +16,7 @@ import { ClubDetail } from '@/pages/ClubDetail';
 import { MemberProfile } from '@/pages/MemberProfile';
 import { Settings } from '@/pages/Settings';
 import { JoinClub } from '@/pages/JoinClub';
+import { PrivacyPolicy } from '@/pages/PrivacyPolicy';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +38,7 @@ function App() {
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/join/:inviteCode" element={<JoinClub />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
 
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<Dashboard />} />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendOtpCode, verifyOtpCode } from '@/api/auth';
 import { Button } from '@/components/ui/Button';
@@ -148,6 +148,14 @@ export function AuthPage() {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           No password needed. We'll send you a code to sign in.
+        </p>
+
+        <p className="mt-4 text-center text-xs text-gray-400">
+          By signing in you agree to our{' '}
+          <Link to="/privacy" className="underline hover:text-gray-600">
+            privacy policy
+          </Link>
+          .
         </p>
       </div>
     </div>
