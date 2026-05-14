@@ -5,9 +5,7 @@
       {
         "appIDs": ["A235BNZWJ5.app.goodertechs.ruckus"],
         "components": [
-          { "/": "/auth/callback*" },
-          { "/": "/book/*" },
-          { "/": "/join/*" }
+          { "/": "/*" }
         ]
       }
     ]

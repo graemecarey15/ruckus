@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useSearchParams, Link } from 'react-router-dom';
+import { Navigate, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { sendOtpCode, verifyOtpCode } from '@/api/auth';
 import { Button } from '@/components/ui/Button';
@@ -9,6 +9,7 @@ import { isNative } from '@/native/capacitor';
 export function AuthPage() {
   const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [step, setStep] = useState<'email' | 'code'>('email');
@@ -152,9 +153,13 @@ export function AuthPage() {
 
         <p className="mt-4 text-center text-xs text-gray-400">
           By signing in you agree to our{' '}
-          <Link to="/privacy" className="underline hover:text-gray-600">
+          <button
+            type="button"
+            onClick={() => navigate('/privacy')}
+            className="underline hover:text-gray-600"
+          >
             privacy policy
-          </Link>
+          </button>
           .
         </p>
       </div>

@@ -4,8 +4,8 @@
 <dict>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:ruckus.goodertechs.com</string>
-		<string>applinks:ruckus.pages.dev</string>
+		<string>applinks:ruckus.goodertechs.com?mode=developer</string>
+		<string>applinks:ruckus.pages.dev?mode=developer</string>
 	</array>
 </dict>
 </plist>
