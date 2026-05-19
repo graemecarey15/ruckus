@@ -12,7 +12,7 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onChange }: TabsProps) {
   return (
-    <div className="border-b border-gray-200">
+    <div className="border-b border-gray-200 overflow-x-auto">
       <nav className="flex space-x-8" aria-label="Tabs">
         {tabs.map((tab) => (
           <button
