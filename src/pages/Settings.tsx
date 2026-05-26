@@ -1,17 +1,38 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateProfile } from '@/api/profiles';
+import { deleteAccount } from '@/api/account';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Avatar } from '@/components/ui/Avatar';
+import { Modal } from '@/components/ui/Modal';
 
 export function Settings() {
   const { user, profile, refreshProfile } = useAuth();
+  const navigate = useNavigate();
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const [bio, setBio] = useState(profile?.bio || '');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteExpanded, setDeleteExpanded] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await deleteAccount();
+      navigate('/', { replace: true });
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete account');
+      setDeleting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +102,82 @@ export function Settings() {
           </Button>
         </form>
       </div>
+
+      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200">
+        <button
+          type="button"
+          onClick={() => setDeleteExpanded((v) => !v)}
+          className="w-full flex items-center justify-between px-6 py-4 text-left"
+          aria-expanded={deleteExpanded}
+        >
+          <h2 className="text-lg font-semibold text-gray-900">Delete Account</h2>
+          <svg
+            className={`h-5 w-5 text-gray-400 transition-transform ${deleteExpanded ? 'rotate-180' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {deleteExpanded && (
+          <div className="px-6 pb-6">
+            <p className="text-sm text-gray-600 mb-4">
+              Permanently delete your account, library, and notes. This cannot be undone.
+            </p>
+            <Button variant="danger" onClick={() => setDeleteOpen(true)}>
+              Delete Account
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <Modal
+        isOpen={deleteOpen}
+        onClose={() => {
+          if (deleting) return;
+          setDeleteOpen(false);
+          setDeleteConfirm('');
+          setDeleteError('');
+        }}
+        title="Delete account?"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-700">
+            This will permanently delete your account and all of your data. To
+            confirm, type <span className="font-semibold">DELETE</span> below.
+          </p>
+          <Input
+            value={deleteConfirm}
+            onChange={(e) => setDeleteConfirm(e.target.value)}
+            placeholder="DELETE"
+            autoFocus
+          />
+          {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="danger"
+              loading={deleting}
+              disabled={deleteConfirm !== 'DELETE'}
+              onClick={handleDelete}
+            >
+              Permanently delete
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setDeleteOpen(false);
+                setDeleteConfirm('');
+                setDeleteError('');
+              }}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
