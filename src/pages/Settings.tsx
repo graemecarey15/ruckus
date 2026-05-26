@@ -9,7 +9,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { Modal } from '@/components/ui/Modal';
 
 export function Settings() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState(profile?.display_name || '');
   const [bio, setBio] = useState(profile?.bio || '');
@@ -21,17 +21,24 @@ export function Settings() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [deleted, setDeleted] = useState(false);
 
   const handleDelete = async () => {
     setDeleting(true);
     setDeleteError('');
     try {
       await deleteAccount();
-      navigate('/', { replace: true });
+      setDeleted(true);
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Failed to delete account');
+    } finally {
       setDeleting(false);
     }
+  };
+
+  const handleDeletedDone = async () => {
+    await signOut();
+    navigate('/', { replace: true });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -135,48 +142,66 @@ export function Settings() {
       <Modal
         isOpen={deleteOpen}
         onClose={() => {
-          if (deleting) return;
+          if (deleting || deleted) return;
           setDeleteOpen(false);
           setDeleteConfirm('');
           setDeleteError('');
         }}
-        title="Delete account?"
+        title={deleted ? 'Account deleted' : 'Delete account?'}
       >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-700">
-            This will permanently delete your account and all of your data. To
-            confirm, type <span className="font-semibold">DELETE</span> below.
-          </p>
-          <Input
-            value={deleteConfirm}
-            onChange={(e) => setDeleteConfirm(e.target.value)}
-            placeholder="DELETE"
-            autoFocus
-          />
-          {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
-          <div className="flex gap-2 pt-2">
-            <Button
-              variant="danger"
-              loading={deleting}
-              disabled={deleteConfirm !== 'DELETE'}
-              onClick={handleDelete}
-            >
-              Permanently delete
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setDeleteOpen(false);
-                setDeleteConfirm('');
-                setDeleteError('');
-              }}
-              disabled={deleting}
-            >
-              Cancel
-            </Button>
+        {deleted ? (
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-sm text-gray-700">
+                Your account and all of your data have been permanently deleted.
+              </p>
+            </div>
+            <div className="pt-2">
+              <Button onClick={handleDeletedDone}>Done</Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700">
+              This will permanently delete your account and all of your data. To
+              confirm, type <span className="font-semibold">DELETE</span> below.
+            </p>
+            <Input
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder="DELETE"
+              autoFocus
+            />
+            {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="danger"
+                loading={deleting}
+                disabled={deleteConfirm !== 'DELETE'}
+                onClick={handleDelete}
+              >
+                Permanently delete
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setDeleteOpen(false);
+                  setDeleteConfirm('');
+                  setDeleteError('');
+                }}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
