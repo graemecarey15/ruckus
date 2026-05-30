@@ -26,3 +26,7 @@ supabase/.temp/
 
 # Store-listing artifacts (regenerated, not source of truth)
 screenshots/
+
+# iOS build output (keep export config/scripts, not the heavy artifacts)
+build/App.xcarchive/
+build/export/
